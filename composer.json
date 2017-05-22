@@ -30,7 +30,7 @@
                 },
                 "autoload": {
                     "psr-4": {
-                        "Crazymeeks\\PHPCacher\\": "src"
+                        "NWJeffM\\Generators\\": "packages/nwjeffm/repository-generator/src"
                     }
                 }
             }
