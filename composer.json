@@ -1,0 +1,40 @@
+{
+    "name": "nwjeffm/repository-generator",
+    "description": "Laravel Repository Generator.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jeffrey Mabazza",
+            "email": "jeffrey.mabazza@nuworks.ph"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "NWJeffM\\Generators\\": "packages/nwjeffm/repository-generator/src"
+        }
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "nwjeffm/generators",
+                "version": "master",
+                "source": {
+                    "url": "https://github.com/nwjeffm/nw-service-generator",
+                    "type": "git",
+                    "reference": "master"
+                },
+                "autoload": {
+                    "psr-4": {
+                        "Crazymeeks\\PHPCacher\\": "src"
+                    }
+                }
+            }
+            
+        }
+    ]
+}

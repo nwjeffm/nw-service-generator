@@ -1,0 +1,10 @@
+<?php
+
+namespace {{Namespace}};
+
+use Illuminate\Http\Request;
+
+trait {{TraitName}}
+{
+	
+}
