@@ -18,18 +18,18 @@ class MakeRepositoryCommand extends Command
     protected $name = 'make:repositories';
 
     /**
-     * The command signature
+     * The command signature.
      *
      * @var string
      */
-    protected $signature = 'make:repositories {name : The name of your Repository} {--interface= : Custom name of your Interface} {--trait= : Custom name of your Trait}';
+    protected $signature = 'make:repository {name : Repository to be created} {--dir= : Directory of the repository} {--trait : With trait}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Generator Repository files for your Service';
+    protected $description = 'Create a new repository files for your services';
 
     /**
      * Meta information for the requested migration.
@@ -64,7 +64,7 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
-     * Execute the command
+     * Execute the command.
      */
     public function handle()
     {
@@ -73,168 +73,96 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
-     * Create the repository
+     * Create the repository.
      *
      * @return mixed
      */
     protected function makeRepositories()
     {
-    	if($this->repositoryExists()) {
-    		return $this->error("Repository already exists");
+    	if($this->isRepositoryExists()) {
+    		return $this->error("Repository name already exists");
     	}
 
     	$this->createRepositoriesDirectory();
-    	$this->addInterfaceFile();
-    	$this->addTraitFile();
-    }
-
-    /**
-     * Validate if repository already exists
-     *
-     * @return bool
-     */
-    public function repositoryExists()
-    {
-    	if($this->files->exists($this->getInterfacesDirectory() . '/' . $this->getInterfaceName() . '.php')
-    		|| $this->files->exists($this->getTraitsDirectory() . '/' . $this->getTraitName() . '.php')) {
-    		return true;
-    	}
-
-    	return false;
-    }
-
-    /**
-     * Get the Repositories directory
-     *
-     * @return string
-     */
-    private function getRepositoriesDirectory()
-    {
-    	return base_path() . '/app/' . config('generator.repositories_directory');
-    }
-
-    /**
-     * Get the Interface directory
-     *
-     * @return string
-     */
-    private function getInterfacesDirectory()
-    {
-    	return base_path() . '/app/' . config('generator.repositories_directory') . '/Interfaces';
-    }
-
-    /**
-     * Get the Traits directory
-     *
-     * @return string
-     */
-    protected function getTraitsDirectory()
-    {
-    	return base_path() . '/app/' . config('generator.repositories_directory') . '/Traits';
-    }
-
-    /**
-     * Create Repository directory
-     */
-    protected function createRepositoriesDirectory()
-    {
-    	if( ! $this->files->isDirectory($this->getRepositoriesDirectory())) {
-    		$this->files->makeDirectory($this->getRepositoriesDirectory(), 0755);
-    	}
-    	$this->info($this->getAppNamespace());
-
-    	if( ! $this->files->isDirectory($this->getInterfacesDirectory())) {
-    		$this->files->makeDirectory($this->getInterfacesDirectory(), 0755);
-    	}
-
-    	if( ! $this->files->isDirectory($this->getTraitsDirectory())) {
-    		$this->files->makeDirectory($this->getTraitsDirectory(), 0755);
-    	}
-
-        if( ! $this->files->isDirectory($this->getInterfacesDirectory() . '/Base')) {
-            $this->files->makeDirectory($this->getInterfacesDirectory() . '/Base', 0755);
-        }
-
-        if( ! $this->files->exists($this->getInterfacesDirectory() . '/Base/BaseRepositoryInterface.php')) {
-            $this->addBaseInterfaceFile();
+        $this->createInterfacesDirectory();
+        $this->createBaseInterfaceFile();
+        $this->createInterfaceFile();
+        $this->createTraitsDirectory();
+        if($this->option('trait')) {
+            $this->createTraitFile();
         }
     }
 
-    protected function getRepositoryName()
-    {
-    	return $this->argument('name');
-    }
-
     /**
-     * Return the Interface name
-     *
-     * @return mixed
-     */
-    protected function getInterfaceName()
-    {
-    	if( ! is_null($interface_name = $this->option('interface'))) {
-    		return ucwords(Str::plural(Str::camel($interface_name))) . 'RepositoryInterface';
-    	}
-
-    	return ucwords(Str::plural(Str::camel($this->getRepositoryName()))) . 'RepositoryInterface';
-    }
-
-    protected function addBaseInterfaceFile()
-    {
-    	$this->files->put($this->getBaseInterfacePath(), $this->generateBaseInterfaceFile());
-    }
-
-    /**
-     * Add new Interface Repository
+     * Create base interface file
      *
      * @return void
      */
-    protected function addInterfaceFile()
+    protected function createBaseInterfaceFile()
     {
-        $this->files->put($this->getInterfacePath(), $this->generateInterfaceFile());
+        if( ! $this->files->exists($this->getRepositoriesDirectory() . 'Interfaces/Base/BaseRepositoryInterface.php')) {
+            $this->files->put(base_path() . '/' . $this->getRepositoriesDirectory() . 'Interfaces/Base/BaseRepositoryInterface.php', $this->generateBaseInterfaceFile());
 
-        $this->info('Interface generated successfully');
+            return $this->info('Base interface file generated.');
+        }
     }
 
+    /**
+     * Generate base interface class using the stub
+     *
+     * @return void
+     */
     protected function generateBaseInterfaceFile()
     {
         $stub = $this->files->get($this->getBaseInterfaceStub());
 
-        $this->replaceNamespace($stub, config('generator.repositories_directory') . "\Interfaces\Base");
+        $this->replaceNamespace($stub, $this->getBaseInterfaceNamespace());
 
         return $stub;
     }
 
     /**
-     * Generate Interface file
+     * Create interface file.
      *
      * @return void
      */
-    public function generateInterfaceFile()
+    protected function createInterfaceFile()
+    {
+        $this->files->put(base_path() . '/' . $this->getInterfacesDirectory() . $this->getInterfaceName() . '.php', $this->generateInterfaceFile());
+
+        return $this->info('Interface file generated.');
+    }
+
+    /**
+     * Generate interface class using the stub.
+     *
+     * @return void
+     */
+    protected function generateInterfaceFile()
     {
         $stub = $this->files->get($this->getInterfaceStub());
 
-        $this->replaceNamespace($stub, config('generator.repositories_directory') . "\Interfaces")
-            ->replaceInterfaceDirectory($stub)
+        $this->replaceNamespace($stub, $this->getInterfaceNamespace())
+            ->replaceBaseInterfaceDirectory($stub)
             ->replaceInterfaceClassName($stub);
 
         return $stub;
     }
 
     /**
-     * Add new Trait Repository
+     * Create trait file
      *
      * @return void
      */
-    protected function addTraitFile()
+    protected function createTraitFile()
     {
-        $this->files->put($this->getTraitPath(), $this->generateTraitFile());
+        $this->files->put(base_path() . '/' . $this->getTraitsDirectory() . $this->getTraitName() . '.php', $this->generateTraitFile());
 
-        $this->info('Trait generated successfully');
+        return $this->info('Trait file generated.');
     }
 
     /**
-     * Generate Trait file
+     * Generate trait class using the stub.
      *
      * @return void
      */
@@ -242,14 +170,271 @@ class MakeRepositoryCommand extends Command
     {
         $stub = $this->files->get($this->getTraitStub());
 
-        $this->replaceNamespace($stub, config('generator.repositories_directory') . "\Traits")
-            ->replaceTraitClassName($stub);
+        $this->replaceNamespace($stub, $this->getTraitNamespace())
+            ->replaceTraitName($stub);
 
         return $stub;
     }
 
     /**
-     * Return Trait stub
+     * Get interface namespace
+     *
+     * @return sring
+     */
+    protected function getInterfaceNamespace()
+    {
+        return str_replace('/', '\\', ucwords($this->getInterfacesDirectory(), '/'));
+    }
+
+    /**
+     * Get base interface namespace
+     *
+     * @return string
+     */
+    protected function getBaseInterfaceNamespace()
+    {
+        return rtrim(str_replace('/', '\\', ucwords($this->getRepositoriesDirectory(), '/')), '/\\') . '\Interfaces\Base';
+    }
+
+    /**
+     * Get trait namespace
+     *
+     * @return string
+     */
+    protected function getTraitNamespace()
+    {
+        return str_replace('/', '\\', ucwords($this->getTraitsDirectory(), '/'));
+    }
+
+    /**
+     * Replace the namespace in the stub.
+     *
+     * @param  string $stub
+     * @param  string $directory
+     * @return $this
+     */
+    protected function replaceNamespace(&$stub, $directory = '')
+    {
+        $stub = str_replace('{{Namespace}}', $this->trimTrailingSlash($directory), $stub);
+
+        return $this;
+    }
+
+    /**
+     * Replace interface directory from the stub
+     *
+     * @return string
+     */
+    protected function replaceInterfaceDirectory(&$stub)
+    {
+        $stub = str_replace('{{InterfaceDirectory}}', str_replace('/', '\\', ucwords($this->getInterfacesDirectory(), '/')), $stub);
+
+        return $this;
+    }
+
+    /**
+     * Replace base interface directory from the stub
+     *
+     * @return string
+     */
+    protected function replaceBaseInterfaceDirectory(&$stub)
+    {
+        $stub = rtrim(str_replace('{{BaseInterfaceDirectory}}', $this->getBaseInterfaceNamespace(), $stub));
+
+        return $this;
+    }
+
+    /**
+     * Replace the interface class name in the stub.
+     *
+     * @param  string $stub
+     * @return $this
+     */
+    protected function replaceInterfaceClassName(&$stub)
+    {
+        $stub = str_replace('{{InterfaceClassName}}', ucwords(Str::camel($this->getInterfaceName())), $stub);
+        
+        return $this;
+    }
+
+    /**
+     * Replace the trait class name in the stub.
+     *
+     * @param string $stub
+     * @return $this
+     */
+    protected function replaceTraitName(&$stub)
+    {
+        $stub = str_replace('{{TraitName}}', ucwords(Str::camel($this->getTraitName())), $stub);
+
+        return $this;
+    }
+
+    /**
+     * create TraitDirectory
+     *
+     * @return void
+     */
+    protected function createTraitsDirectory()
+    {
+        if( ! $this->files->isDirectory($this->getRepositoriesDirectory() . 'Traits')) {
+            $this->files->makeDirectory($this->getRepositoriesDirectory() . 'Traits');
+        }
+
+        if( ! $this->files->isDirectory($this->getTraitsDirectory())) {
+            $this->files->makeDirectory($this->getTraitsDirectory());
+        }
+    }
+
+    /**
+     * Create interface repository directory
+     *
+     * @return void
+     */
+    protected function createInterfacesDirectory()
+    {
+        if( ! $this->files->isDirectory($this->getRepositoriesDirectory() . 'Interfaces')) {
+            $this->files->makeDirectory($this->getRepositoriesDirectory() . 'Interfaces');
+        }
+
+        if( ! $this->files->isDirectory($this->getRepositoriesDirectory() . 'Interfaces/Base')) {
+            $this->files->makeDirectory($this->getRepositoriesDirectory() . 'Interfaces/Base');
+        }
+
+        if( ! $this->files->isDirectory($this->getInterfacesDirectory())) {
+            $this->files->makeDirectory($this->getInterfacesDirectory());
+        }
+    }
+
+    /**
+     * Create repositories directory
+     *
+     * @return void
+     */
+    protected function createRepositoriesDirectory()
+    {
+        if( ! $this->files->isDirectory($this->getRepositoriesDirectory())) {
+            $this->files->makeDirectory($this->getRepositoriesDirectory());
+        }
+    }
+
+    /**
+     * Validate if repository already exists.
+     *
+     * @return bool
+     */
+    protected function isRepositoryExists()
+    {
+        if($this->isInterfaceExists() || $this->isTraitExists()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Validate if trait repository exists.
+     *
+     * @return bool
+     */
+    protected function isTraitExists()
+    {
+        return $this->files->exists($this->getTraitsDirectory() . $this->getTraitName() . '.php');
+    }
+
+    /**
+     * Validate if interface repository exists.
+     *
+     * @return bool
+     */
+    protected function isInterfaceExists()
+    {
+        return $this->files->exists($this->getInterfacesDirectory() . $this->getInterfaceName() . '.php');
+    }
+
+    /**
+     * Return interface name
+     *
+     * @return string
+     */
+    protected function getInterfaceName()
+    {
+        return Str::plural(Str::studly(strtolower($this->argument('name')))) . 'RepositoryInterface';
+    }
+
+    /**
+     * Return trait name
+     *
+     * @return string
+     */
+    protected function getTraitName()
+    {
+        return Str::plural(Str::studly(strtolower($this->argument('name')))) . 'Trait';
+    }
+
+    /**
+     * Return interface directory
+     *
+     * @return string
+     */
+    protected function getInterfacesDirectory()
+    {
+        return $this->getRepositoriesDirectory() . 'Interfaces/' .$this->returnDirOption();
+    }
+
+    /**
+     * Return trait directory
+     *
+     * @return string
+     */
+    protected function getTraitsDirectory()
+    {
+        return $this->getRepositoriesDirectory() . 'Traits/' . $this->returnDirOption();
+    }
+
+    /**
+     * Return base interface directory
+     *
+     * @return string
+     */
+    protected function getRepositoriesDirectory()
+    {
+        return 'app/' . (config('generator.repositories_directory') ? $this->trimTrailingSlash(ucfirst(config('generator.repositories_directory'))) . '/' : '');
+    }
+
+    /**
+     * Return --dir option
+     *
+     * @return string
+     */
+    public function returnDirOption()
+    {
+        return ! is_null($this->option('dir')) ? Str::plural(Str::studly($this->option('dir'))) . '/' : '';
+    }
+
+    /**
+     * Return the interface stub template.
+     *
+     * @return string
+     */
+    protected function getInterfaceStub()
+    {
+        return __DIR__ . '/../stubs/interface.stub';
+    }
+
+
+    /**
+     * Return the base enterface stub template.
+     *
+     * @return string
+     */
+    protected function getBaseInterfaceStub()
+    {
+        return __DIR__ . '/../stubs/base-interface.stub';
+    }
+
+    /**
+     * Return the trait stub template.
      *
      * @return string
      */
@@ -259,121 +444,26 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
-     * Return Interface stub
-     *
-     * @return string
-     */
-    protected function getInterfaceStub()
-    {
-        return __DIR__ . '/../stubs/interface.stub';
-    }
-
-    /**
-     * Return Interface stub
-     *
-     * @return string
-     */
-    protected function getBaseInterfaceStub()
-    {
-        return __DIR__ . '/../stubs/base-interface.stub';
-    }
-
-    protected function replaceNamespace(&$stub, $directory = '')
-    {
-        $stub = str_replace('{{Namespace}}', $this->getAppNamespace() . $directory, $stub);
-
-        return $this;
-    }
-
-    protected function replaceInterfaceDirectory(&$stub)
-    {
-        $stub = str_replace('{{InterfaceDirectory}}', config('generator.repositories_directory') . '\Interfaces', $stub);
-
-        return $this;
-    }
-
-    /**
-     * Replace the class name in the stub.
-     *
-     * @param  string $stub
-     * @return $this
-     */
-    protected function replaceInterfaceClassName(&$stub)
-    {
-        $className = ucwords(Str::camel($this->getInterfaceName()));
-        
-        $stub = str_replace('{{InterfaceName}}', $className, $stub);
-        
-        return $this;
-    }
-
-    /**
-     * Replace the class name in the stub.
-     *
-     * @param  string $stub
-     * @return $this
-     */
-    protected function replaceTraitClassName(&$stub)
-    {
-        $className = ucwords(Str::camel($this->getTraitName()));
-        
-        $stub = str_replace('{{TraitName}}', $className, $stub);
-        
-        return $this;
-    }
-
-    /**
-     * Return the Trait name
-     *
-     * @return mixed
-     */
-    protected function getTraitName()
-    {
-    	if( ! is_null($trait_name = $this->option('trait'))) {
-    		return ucwords(Str::plural(Str::camel($trait_name))) . 'Trait';
-    	}
-
-    	return ucwords(Str::plural(Str::camel($this->getRepositoryName()))) . 'Trait';
-    }
-
-    /**
-     * Get the trait path to where we should store the service
-     *
-     * @return string
-     */
-    protected function getTraitPath()
-    {
-        return $this->getTraitsDirectory() . '/' . $this->getTraitName() . '.php';
-    }
-
-    /**
-     * Get the trait path to where we should store the service
-     *
-     * @return string
-     */
-    protected function getInterfacePath()
-    {
-        return $this->getInterfacesDirectory() . '/' . $this->getInterfaceName() . '.php';
-    }
-
-    /**
-     * Get the trait path to where we should store the service
-     *
-     * @return string
-     */
-    protected function getBaseInterfacePath()
-    {
-        return $this->getInterfacesDirectory() . '/Base/BaseRepositoryInterface.php';
-    }
-
-	/**
-     * Get the application namespace.
+     * Get the application's namespace.
      *
      * @return string
      */
     protected function getAppNamespace()
     {
         return Container::getInstance()->getNamespace();
+    }
+
+    /**
+     * Remove trailing slash from the string
+     *
+     * @param string $string
+     * @return string
+     */
+    private function trimTrailingSlash($string = null)
+    {
+        if( ! is_null($string)) {
+            return rtrim($string, '/\\');
+        }
     }
 
 }

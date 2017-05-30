@@ -2,9 +2,9 @@
 
 namespace {{Namespace}};
 
-use App\{{InterfaceDirectory}}\Base\BaseRepositoryInterface;
+use {{BaseInterfaceDirectory}}\BaseRepositoryInterface;
 
-interface {{InterfaceName}} extends BaseRepositoryInterface
+interface {{InterfaceClassName}} extends BaseRepositoryInterface
 {
 	
 }
