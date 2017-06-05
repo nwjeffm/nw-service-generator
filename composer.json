@@ -14,7 +14,7 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
-            "NWJeffM\\Generators\\": "packages/nwjeffm/repository-generator/src"
+            "NWJeffM\\Generators\\": "src/"
         }
     },
     "repositories": [
@@ -30,7 +30,7 @@
                 },
                 "autoload": {
                     "psr-4": {
-                        "NWJeffM\\Generators\\": "packages/nwjeffm/repository-generator/src"
+                        "NWJeffM\\Generators\\": "src/"
                     }
                 }
             }
