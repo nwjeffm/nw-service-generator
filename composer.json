@@ -1,5 +1,5 @@
 {
-    "name": "nwjeffm/repository-generator",
+    "name": "nwjeffm/nw-repository-generator",
     "description": "Laravel Repository Generator.",
     "type": "library",
     "license": "MIT",
