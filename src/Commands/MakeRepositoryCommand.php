@@ -264,11 +264,21 @@ class MakeRepositoryCommand extends Command
         }
     }
 
+    /**
+     * Return the service directory from the configuration file
+     *
+     * @return string
+     */
     protected function getServiceDirectoryFromConfig()
     {
         return substr(rtrim($this->getServiceDirectory(), '/\\'), 4);
     }
 
+    /**
+     * Return the repository directory from the configuration file
+     *
+     * @return string
+     */
     protected function getRepositoryDirectoryFromConfig()
     {
         return substr(rtrim($this->getRepositoryDirectory(), '/\\'), 4);
