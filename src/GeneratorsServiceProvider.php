@@ -25,20 +25,7 @@ class GeneratorsServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // $this->registerServiceGenerator();
         $this->registerRepositoryGenerator();
-    }
-
-    /**
-     * Registersthe make:service command.
-     */
-    private function registerServiceGenerator()
-    {
-        $this->app->singleton('command.nwjeffm.service', function($app) {
-            return $app['NWJeffM\Generators\Commands\MakeServiceCommand'];
-        });
-
-        $this->commands('command.nwjeffm.service');
     }
 
     /**

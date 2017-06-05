@@ -1,0 +1,20 @@
+<?php
+
+namespace App\{{Namespace}};
+
+use App\{{BaseServiceAbstractDirectory}}\BaseServiceAbstract;
+
+class {{ClassName}} extends BaseServiceAbstract
+{
+	
+	/**
+	 * Description here
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{
+
+	}
+
+}

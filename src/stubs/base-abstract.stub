@@ -1,0 +1,7 @@
+<?php
+
+namespace App\{{ServiceDirectory}};
+
+abstract class BaseServiceAbstract {
+
+}
