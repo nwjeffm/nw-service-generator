@@ -14,10 +14,10 @@ class MakeRepositoryCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'make:repository {name : The name of the service.}
-        {--i : Create with interface.}
-        {--interface= : The interface name to be created.}
-        {--dir= : Directory to store the service (and interface).}';
+    protected $signature = 'make:repository {name : The name of the service}
+        {--i : Create a service with interface file}
+        {--interface= : Create a service with custom interface file name}
+        {--dir= : Create the service (and interface) file inside a directory';
 
     /**
      * The console command description
