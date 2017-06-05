@@ -71,7 +71,7 @@ class MakeRepositoryCommand extends Command
         if($this->option('i') || $this->option('interface')) {
             $interface = trim($this->option('interface') ?: null);
             $interface = Str::studly($interface);
-            $interface = Str::plural($interface);
+            $interface = $interface ? $interface . 'Interface' : $name . 'Interface';
 
             $this->createInterface($interface ?: $name);
         }
@@ -95,7 +95,7 @@ class MakeRepositoryCommand extends Command
 
         $this->createBaseServiceAbstract();
 
-        $this->createServiceFile($name);
+        $this->createServiceFile($name, $this->option('i') || $this->option('interface') ? true : false);
     }
 
     /**
@@ -174,16 +174,28 @@ class MakeRepositoryCommand extends Command
      *
      * @return void
      */
-    protected function createServiceFile($name)
+    protected function createServiceFile($name, $with_interface)
     {
         $dir_option = rtrim(str_replace('/', '\\', $this->getDirOption()), '/\\');
         $dir_option = $dir_option ? '\\' . $dir_option : '';
 
-        $stub = str_replace(
-            ['{{Namespace}}', '{{BaseServiceAbstractDirectory}}','{{ClassName}}'],
-            [$this->getServiceDirectoryFromConfig() . $dir_option, $this->getServiceDirectoryFromConfig(), $name],
-            $this->files->get(__DIR__ . '/../stubs/service.stub')
-        );
+        if($with_interface === true) {
+            $interface = trim($this->option('interface') ?: null);
+            $interface = Str::studly($interface);
+            $interface = $interface ? $interface . 'Interface' : $name . 'Interface';
+
+            $stub = str_replace(
+                ['{{Namespace}}', '{{BaseServiceAbstractDirectory}}', '{{InterfaceDirectory}}', '{{InterfaceName}}', '{{ClassName}}'],
+                [$this->getServiceDirectoryFromConfig() . $dir_option, $this->getServiceDirectoryFromConfig(), $this->getRepositoryDirectoryFromConfig() . $dir_option, $interface, $name],
+                $this->files->get($this->getServiceImplementsInterfaceStub())
+            );
+        } else if($with_interface === false) {
+            $stub = str_replace(
+                ['{{Namespace}}', '{{BaseServiceAbstractDirectory}}', '{{ClassName}}'],
+                [$this->getServiceDirectoryFromConfig() . $dir_option, $this->getServiceDirectoryFromConfig(), $name],
+                $this->files->get($this->getServiceStub())
+            );
+        }
 
         $this->files->put(base_path() . '/' . $this->getServiceDirectory() . $this->getDirOption() . $name . '.php', $stub);
     }
@@ -200,7 +212,7 @@ class MakeRepositoryCommand extends Command
         $dir_option = $dir_option ? '\\' . $dir_option : '';
 
         $stub = str_replace(
-            ['{{Namespace}}', '{{BaseInterfaceDirectory}}','{{InterfaceClassName}}'],
+            ['{{Namespace}}', '{{BaseInterfaceDirectory}}', '{{InterfaceClassName}}'],
             [$this->getRepositoryDirectoryFromConfig() . $dir_option, $this->getRepositoryDirectoryFromConfig(), $interface],
             $this->files->get(__DIR__ . '/../stubs/interface.stub')
         );
@@ -360,6 +372,16 @@ class MakeRepositoryCommand extends Command
     protected function getServiceStub()
     {
         return __DIR__ . '/../stubs/service.stub';
+    }
+
+    /**
+     * Return the service implements interface stub
+     *
+     * @return $stub
+     */
+    protected function getServiceImplementsInterfaceStub()
+    {
+        return __DIR__ . '/../stubs/service-implements-interface.stub';
     }
 
 }
