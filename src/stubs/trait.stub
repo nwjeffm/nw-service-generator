@@ -1,6 +1,6 @@
 <?php
 
-namespace {{Namespace}};
+namespace App\Http\{{Namespace}};
 
 use Illuminate\Http\Request;
 
