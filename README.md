@@ -5,7 +5,7 @@
 	<a href="https://packagist.org/packages/nwjeffm/nw-repository-generator"><img src="https://img.shields.io/packagist/v/nwjeffm/nw-repository-generator.svg?colorB=00e500" alt="Packgist Latest Version"></a>
 	<a href="https://packagist.org/packages/nwjeffm/nw-repository-generator/stats"><img src="https://img.shields.io/packagist/dt/nwjeffm/nw-repository-generator.svg?colorB=00e500" alt="Packgist Downloads"></a>
 	<a href="https://github/contributors/nwjeffm/nw-repository-generator"><img src="https://img.shields.io/github/contributors/nwjeffm/nw-repository-generator.svg?colorB=00e500" alt="Contributors"></a>
-	<a href="https://packagist.org/l/nwjeffm/nw-repository-generator"><img src="https://img.shields.io/packagist/l/nwjeffm/nw-repository-generator.svg" alt="License"></a>
+	<a href="https://packagist.org/l/nwjeffm/nw-service-generator"><img src="https://img.shields.io/packagist/l/nwjeffm/nw-repository-generator.svg" alt="License"></a>
 </h1>
 
 # Requirements
