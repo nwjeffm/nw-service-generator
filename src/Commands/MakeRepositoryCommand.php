@@ -6,18 +6,24 @@ use Illuminate\Support\Str;
 use Illuminate\Console\Command;
 use Illuminate\Container\Container;
 use Illuminate\Filesystem\Filesystem;
+use NWJeffM\Generators\Helpers\GeneratorTrait;
 
 class MakeRepositoryCommand extends Command
 {
+
+    use GeneratorTrait;
+
     /**
      * The console command signature
      *
      * @var string
      */
-    protected $signature = 'make:repository {name : The name of the service.}
-        {--i : Create with interface.}
-        {--interface= : The interface name to be created.}
-        {--dir= : Directory to store the service (and interface).}';
+    protected $signature = 'make:repository {name : The name of the service}
+        {--dir= : Create the service (and interface) file inside a directory}
+        {--interface= : Create a service with custom interface file name}
+        {--trait= : Create a service with custom trait file name}
+        {--i : Create a service with interface file}
+        {--t : Create a service with trait file}';
 
     /**
      * The console command description
@@ -58,22 +64,20 @@ class MakeRepositoryCommand extends Command
      */
     public function fire()
     {
-        $name = trim($this->argument('name'));
-        $name = Str::studly($name);
-        $name = Str::plural($name);
-
         if($config = $this->configFileMissing()) {
             return $this->error($config);
         }
 
+        $name = trim($this->argument('name'));
+
         $this->createService($name);
 
         if($this->option('i') || $this->option('interface')) {
-            $interface = trim($this->option('interface') ?: null);
-            $interface = Str::studly($interface);
-            $interface = Str::plural($interface);
+            $this->createInterface($this->option('interface') ?: $name);
+        }
 
-            $this->createInterface($interface ?: $name);
+        if($this->option('t') || $this->option('trait')) {
+            $this->createTrait($this->option('trait') ?: $name);
         }
     }
 
@@ -85,32 +89,32 @@ class MakeRepositoryCommand extends Command
      */
     protected function createService($name)
     {
-        $this->createServiceDirectory();
+        $name = $this->configureName('service', $name);
 
         if($this->serviceNameExists($name) === true) {
-            return $this->error('Service already exists.');
+            return $this->error('Service already exists');
         }
 
-        $this->createDir();
+        $this->createServiceDirectory();
 
         $this->createBaseServiceAbstract();
 
-        $this->createServiceFile($name);
+        $this->createServiceFile($name, $this->option('i') || $this->option('interface') ? true : false);
     }
 
     /**
      * Create interface
      *
-     * @param string $name
+     * @param  string $interface
      * @return void
      */
     protected function createInterface($interface)
     {
-        $this->createInterfaceDirectory();
-
         if($this->repositoryNameExists($interface) === true) {
-            return $this->error('Interface already exists.');
+            return $this->error('Interface already exists');
         }
+
+        $this->createInterfaceDirectory();
 
         $this->createBaseInterfaceFile();
 
@@ -118,19 +122,20 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
-     * Create interface directory
+     * Create trait
      *
+     * @param string $trait
      * @return void
      */
-    protected function createInterfaceDirectory()
+    protected function createTrait($trait)
     {
-        if( ! $this->files->isDirectory($this->getRepositoryDirectory())) {
-            $this->files->makeDirectory($this->getRepositoryDirectory());
+        if($this->traitNameExists($trait) === true) {
+            return $this->error('Trait already exists');
         }
 
-        if( ! $this->files->isDirectory($this->getRepositoryDirectory() . $this->getDirOption())) {
-            $this->files->makeDirectory($this->getRepositoryDirectory() . $this->getDirOption());
-        }
+        $this->createTraitDirectory();
+
+        $this->createTraitFile($trait);
     }
 
     /**
@@ -174,22 +179,35 @@ class MakeRepositoryCommand extends Command
      *
      * @return void
      */
-    protected function createServiceFile($name)
+    protected function createServiceFile($name, $with_interface)
     {
         $dir_option = rtrim(str_replace('/', '\\', $this->getDirOption()), '/\\');
         $dir_option = $dir_option ? '\\' . $dir_option : '';
+        $classname = $this->configureName('service', $name);
 
-        $stub = str_replace(
-            ['{{Namespace}}', '{{BaseServiceAbstractDirectory}}','{{ClassName}}'],
-            [$this->getServiceDirectoryFromConfig() . $dir_option, $this->getServiceDirectoryFromConfig(), $name],
-            $this->files->get(__DIR__ . '/../stubs/service.stub')
-        );
+        if($with_interface === true) {
+            $interface = trim($this->option('interface'));
+            $interface = $this->configureName('repository', $interface ?: $name);
 
-        $this->files->put(base_path() . '/' . $this->getServiceDirectory() . $this->getDirOption() . $name . '.php', $stub);
+            $stub = str_replace(
+                ['{{Namespace}}', '{{BaseServiceAbstractDirectory}}', '{{InterfaceDirectory}}', '{{InterfaceName}}', '{{ClassName}}'],
+                [$this->getServiceDirectoryFromConfig() . $dir_option, $this->getServiceDirectoryFromConfig(),
+                $this->getRepositoryDirectoryFromConfig() . $dir_option, $interface, $classname],
+                $this->files->get($this->getServiceImplementsInterfaceStub())
+            );
+        } else {
+            $stub = str_replace(
+                ['{{Namespace}}', '{{BaseServiceAbstractDirectory}}', '{{ClassName}}'],
+                [$this->getServiceDirectoryFromConfig() . $dir_option, $this->getServiceDirectoryFromConfig(), $classname],
+                $this->files->get($this->getServiceStub())
+            );
+        }
+
+        $this->files->put(base_path() . '/' . $this->getServiceDirectory() . $this->getDirOption() . $classname . '.php', $stub);
     }
 
     /**
-     * Create the interface class file
+     * Create the interface file
      *
      * @param  string $interface
      * @return void
@@ -198,14 +216,37 @@ class MakeRepositoryCommand extends Command
     {
         $dir_option = rtrim(str_replace('/', '\\', $this->getDirOption()), '/\\');
         $dir_option = $dir_option ? '\\' . $dir_option : '';
+        $interface = $this->configureName('repository', $interface);
+        dd($interface);
 
         $stub = str_replace(
-            ['{{Namespace}}', '{{BaseInterfaceDirectory}}','{{InterfaceClassName}}'],
+            ['{{Namespace}}', '{{BaseInterfaceDirectory}}', '{{InterfaceClassName}}'],
             [$this->getRepositoryDirectoryFromConfig() . $dir_option, $this->getRepositoryDirectoryFromConfig(), $interface],
             $this->files->get(__DIR__ . '/../stubs/interface.stub')
         );
 
         $this->files->put(base_path() . '/' . $this->getRepositoryDirectory() . $this->getDirOption() . $interface . '.php', $stub);
+    }
+
+    /**
+     * Create the trait file
+     *
+     * @param  string $trait
+     * @return void
+     */
+    protected function createTraitFile($trait)
+    {
+        $dir_option = rtrim(str_replace('/', '\\', $this->getDirOption()), '/\\');
+        $dir_option = $dir_option ? '\\' . $dir_option : '';
+        $trait = $this->configureName('trait', $trait);
+
+        $stub = str_replace(
+            ['{{Namespace}}', '{{TraitName}}'],
+            [$this->getTraitDirectoryFromConfig() . $dir_option, $trait],
+            $this->files->get(__DIR__ . '/../stubs/trait.stub')
+        );
+
+        $this->files->put(base_path() . '/' . $this->getTraitDirectory() . $this->getDirOption() . $trait . '.php', $stub);
     }
 
     /**
@@ -239,27 +280,18 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
-     * Create the service directory
+     * Validate if trait already exists
      *
-     * @return void
+     * @param  string $trait
+     * @return bool
      */
-    protected function createServiceDirectory()
+    protected function traitNameExists($trait)
     {
-        if( ! $this->files->isDirectory($this->getServiceDirectory())) {
-            $this->files->makeDirectory($this->getServiceDirectory());
-
-            return $this->info($this->getServiceDirectoryFromConfig() . ' directory created.');
+        if($this->files->exists($this->getTraitDirectory() . $this->getDirOption() . $trait . '.php')) {
+            return true;
         }
-    }
 
-    protected function getServiceDirectoryFromConfig()
-    {
-        return substr(rtrim($this->getServiceDirectory(), '/\\'), 4);
-    }
-
-    protected function getRepositoryDirectoryFromConfig()
-    {
-        return substr(rtrim($this->getRepositoryDirectory(), '/\\'), 4);
+        return false;
     }
 
     /**
@@ -291,13 +323,27 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
+     * Return the full trait directory
+     *
+     * @return string
+     */
+    protected function getTraitDirectory()
+    {
+        if($config = $this->configFileMissing()) {
+            return $this->error($config);
+        }
+
+        return 'app/' . rtrim($this->getConfigTraitDirectory(), '/\\') . '/';
+    }
+
+    /**
      * Return the service directory from config file
      *
      * @return string
      */
-    private function getConfigServiceDirectory()
+    protected function getConfigServiceDirectory()
     {
-        return $this->laravel['config']['repository']['services_directory'];
+        return $this->laravel['config']['repository']['service_directory'];
     }
 
     /**
@@ -305,27 +351,19 @@ class MakeRepositoryCommand extends Command
      *
      * @return string
      */
-    private function getConfigRepositoryDirectory()
+    protected function getConfigRepositoryDirectory()
     {
-        return $this->laravel['config']['repository']['repositories_directory'];
+        return $this->laravel['config']['repository']['repository_directory'];
     }
 
     /**
-     * Create directory from --dir option
+     * Return the trait ddirectory from the config file
      *
-     * @return void
+     * @return string
      */
-    protected function createDir()
+    protected function getConfigTraitDirectory()
     {
-        if($this->option('dir') === false) {
-            return;
-        }
-
-        if($this->files->isDirectory($this->getServiceDirectory() . $this->getDirOption()) === false) {
-            $this->files->makeDirectory($this->getServiceDirectory() . $this->getDirOption());
-
-            return $this->info(rtrim($this->getDirOption(), '/\\') . ' directory created.');
-        }
+        return $this->laravel['config']['repository']['trait_directory'];
     }
 
     /**
@@ -333,10 +371,17 @@ class MakeRepositoryCommand extends Command
      *
      * @return string|null
      */
-    protected function getDirOption()
+    protected function getDirOption($return_array = false)
     {
-        if($this->option('dir')) {
-            return rtrim(ucfirst(Str::plural($this->option('dir'))), '/\\') . '/';
+        if($dir = $this->option('dir')) {
+            $directories = explode('/', $dir);
+            if(is_array($directories) && $directories) {
+                $directories = array_map(function($directory) {
+                    return ucfirst(str::plural(strtolower($directory)));
+                }, $directories);
+
+                return $return_array === true ? $directories : rtrim(implode('/', $directories), '/\\') . '/';
+            }
         }
     }
 
@@ -353,13 +398,67 @@ class MakeRepositoryCommand extends Command
     }
 
     /**
-     * Return the service stub
+     * Configure the name according to user preferred settings
      *
-     * @return $stub
+     * @param  string $type
+     * @param  string $name
+     * @return string
      */
-    protected function getServiceStub()
+    protected function configureName($type, $name)
     {
-        return __DIR__ . '/../stubs/service.stub';
+        $config = $this->laravel['config']['repository'];
+
+        if($config["{$type}_to_plural"] === true) {
+            $name = Str::plural($name);
+        }
+
+        if($config["case_sensitive"] === false) {
+            $name = Str::studly(strtolower($name));
+        }
+
+        return $name . $config["{$type}_append"];
+    }
+
+     /**
+     * Create trait directory
+     *
+     * @return void
+     */
+    protected function createTraitDirectory()
+    {
+        if( ! $this->files->isDirectory($this->getTraitDirectory())) {
+            $this->files->makeDirectory($this->getTraitDirectory());
+        }
+
+        $this->createDirectory('trait');
+    }
+
+    /**
+     * Create interface directory
+     *
+     * @return void
+     */
+    protected function createInterfaceDirectory()
+    {
+        if( ! $this->files->isDirectory($this->getRepositoryDirectory())) {
+            $this->files->makeDirectory($this->getRepositoryDirectory());
+        }
+
+        $this->createDirectory('repository');
+    }
+
+    /**
+     * Create service directory
+     *
+     * @return void
+     */
+    protected function createServiceDirectory()
+    {
+        if( ! $this->files->isDirectory($this->getServiceDirectory())) {
+            $this->files->makeDirectory($this->getServiceDirectory());
+        }
+
+        $this->createDirectory('service');
     }
 
 }

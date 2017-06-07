@@ -1,6 +1,7 @@
 {
     "name": "nwjeffm/nw-repository-generator",
     "description": "Laravel Repository Generator.",
+    "keywords": ["Design Pattern", "Laravel", "Generator", "Laravel Repository", "Laravel Package"],
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -9,12 +10,15 @@
             "email": "jeffrey.mabazza@nuworks.ph"
         }
     ],
-    "minimum-stability": "dev",
-    "require": {},
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.6.4",
+        "nwjeffm/nw-repository-generator": "1.1.*"
+    },
     "autoload": {
         "psr-4": {
             "App\\": "app/",
-            "NWJeffM\\Generators\\": "packages/nwjeffm/repository-generator/src"
+            "NWJeffM\\Generators\\": "src/"
         }
     },
     "repositories": [
@@ -30,7 +34,7 @@
                 },
                 "autoload": {
                     "psr-4": {
-                        "NWJeffM\\Generators\\": "packages/nwjeffm/repository-generator/src"
+                        "NWJeffM\\Generators\\": "src/"
                     }
                 }
             }
