@@ -217,7 +217,6 @@ class MakeRepositoryCommand extends Command
         $dir_option = rtrim(str_replace('/', '\\', $this->getDirOption()), '/\\');
         $dir_option = $dir_option ? '\\' . $dir_option : '';
         $interface = $this->configureName('repository', $interface);
-        dd($interface);
 
         $stub = str_replace(
             ['{{Namespace}}', '{{BaseInterfaceDirectory}}', '{{InterfaceClassName}}'],
